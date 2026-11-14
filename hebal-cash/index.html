@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en-GB">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hebal Cash • Shake Arcade</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f2ebcc;color:#142f28;font:600 16px/1.4 "Trebuchet MS",system-ui,sans-serif}main{max-width:850px;margin:auto;padding:clamp(14px,4vw,36px)}header,nav,.controls{display:flex;align-items:center;justify-content:space-between;gap:10px}h1{font:1000 clamp(46px,10vw,90px)/.94 system-ui;letter-spacing:-.08em;margin:0 0 12px;color:#125747}h1 i{color:#a23c24}nav{background:#183c32;color:#fff4cc;border-radius:12px 12px 0 0;padding:12px 18px;font:700 clamp(13px,3vw,19px) monospace}section{background:#91caaa;border:3px solid #183c32;border-top:0;border-radius:0 0 16px 16px;overflow:hidden}.shop{position:relative;height:200px;background:repeating-linear-gradient(90deg,#a6d6b9 0 27px,#a2d1b4 27px 29px);border-bottom:12px solid #87603d;display:grid;place-items:end center}.awning{position:absolute;inset:0 0 auto;height:25px;background:repeating-linear-gradient(90deg,#e27349 0 42px,#fff1bd 42px 84px);box-shadow:0 5px #27493c44}.machine{position:relative;margin-bottom:1px;background:#ed935a;border:4px solid #234239;border-radius:18px 18px 6px 6px;padding:8px 20px;box-shadow:8px 0 #ae6846;text-align:center}.machine b{display:block;background:#233e35;color:#c9ec91;font:700 14px monospace;padding:5px 12px;border-radius:5px}.jar{margin:8px auto;width:58px;height:54px;border:4px solid #244439;border-radius:4px 4px 16px 16px;background:linear-gradient(105deg,transparent 25%,#fffa 26% 35%,transparent 36%),linear-gradient(to top,#efab79 65%,#e3eed3 65%)}.mixing .jar{animation:shake .12s infinite alternate}@keyframes shake{to{transform:rotate(6deg)}}.lamp{position:absolute;bottom:6px;left:8px;background:#fcda63;width:8px;height:8px;border-radius:50%}.orders{padding:14px;background:#fff7db}.orders h2{font-size:16px;margin:0 0 9px}.queue{display:flex;gap:8px;min-height:66px;align-items:center;flex-wrap:wrap}.ticket{background:white;border:1px dashed #8b957a;border-radius:5px;padding:6px 10px;display:grid;font-size:13px}.ticket:first-child{border:2px solid #255b46}.controls{flex-wrap:wrap;margin:14px 0}button{font:inherit;color:#173b30;background:#fff9de;border:2px solid #234739;border-radius:8px;padding:10px 15px;cursor:pointer;box-shadow:0 3px #234739}button:focus-visible{outline:3px solid #bd491e;outline-offset:3px}button:disabled{opacity:.48;cursor:default}#start,#find{background:#e5ed72}#products{display:flex;gap:7px;flex-wrap:wrap}#message{min-height:1.5em;color:#784020}footer{font-size:12px;margin-top:20px}p{margin:10px 0}header button{white-space:nowrap}@media(max-width:480px){.shop{height:160px}button{padding:9px 10px}}@media(prefers-reduced-motion:reduce){.mixing .jar{animation:none}}
+</style>
+<main><header><h1>Hebal <i>Cash</i></h1><button id="start">Start shift</button></header>
+<p>Run a Herbalife shake stand. You have 60 seconds to find customers, blend their orders and finish with the most cash.</p>
+<nav aria-label="Shift totals"><span id="clock">60s</span><span id="cash">£0</span><span id="agents">0 agents</span></nav>
+<section><div class="shop"><div class="awning"></div><div class="machine"><b id="display">BLENDER READY</b><div class="jar"></div><div class="lamp"></div></div></div>
+<div class="orders"><h2>Order queue</h2><div class="queue" id="queue">Your customers will appear here.</div></div></section>
+<div class="controls"><button id="find" disabled>Find customer</button><button id="hire" disabled>Recruit agent · £16</button></div>
+<div id="products" aria-label="Select the first customer's shake"></div>
+<p id="message" role="status">Match the first order to earn £8. A wrong flavour costs two seconds.</p>
+<p>Each agent finds a customer every five seconds and adds £2 to each sale. The queue holds four.</p><footer>Arcade currency and earnings are fictional. Unofficial fan game.</footer></main>
+<script>
+const el=id=>document.getElementById(id);
+const flavours=['Strawberry','Vanilla','Chocolate'];
+const names=['Carys','Sam','Dylan','Maya','Rhys','Asha','Gwen','Tom'];
+let orders=[],money=0,agents=0,playing=false,deadline=0,nextArrival=0,mixEnds=0,pending=0,timer;
+function addCustomer(){
+ if(orders.length<4) orders.push({name:names[Math.floor(Math.random()*names.length)],flavour:flavours[Math.floor(Math.random()*3)]});
+}
+function cost(){return 16+agents*8}
+function render(){
+ el('clock').textContent=Math.max(0,Math.ceil((deadline-Date.now())/1000))+'s';
+ el('cash').textContent='£'+money;
+ el('agents').textContent=agents+' agent'+(agents===1?'':'s');
+ el('hire').textContent='Recruit agent · £'+cost();
+ el('hire').disabled=!playing||money<cost();
+ el('find').disabled=!playing||orders.length>=4;
+ el('queue').replaceChildren();
+ for(const order of orders){
+  const ticket=document.createElement('div'), flavour=document.createElement('strong');
+  ticket.className='ticket';flavour.textContent=order.flavour;
+  ticket.append(order.name,flavour);el('queue').append(ticket);
+ }
+ if(!orders.length) el('queue').textContent=playing?'Tap Find customer to fill an order.':'Shift finished.';
+ for(const button of el('products').children) button.disabled=!playing||!orders.length||!!mixEnds;
+ el('display').textContent=mixEnds?'BLENDING…':playing?'READY TO MIX':'SHIFT CLOSED';
+ document.querySelector('.machine').classList.toggle('mixing',!!mixEnds);
+}
+function tick(){
+ const now=Date.now();
+ if(mixEnds && now>=mixEnds && mixEnds<=deadline){
+  money+=pending;el('message').textContent='Shake sold! +£'+pending;mixEnds=0;
+ }
+ if(now>=deadline){
+  playing=false;mixEnds=0;clearInterval(timer);el('start').disabled=false;el('start').textContent='Play again';
+  el('message').textContent='Shift complete. You finished with £'+money+'.';
+ }else if(now>=nextArrival){
+  for(let i=0;i<agents && orders.length<4;i++) addCustomer();
+  nextArrival=now+5000;
+ }
+ render();
+}
+function active(){if(!playing)return false;tick();return playing}
+el('start').onclick=()=>{
+ orders=[];money=0;agents=0;mixEnds=0;playing=true;deadline=Date.now()+60000;nextArrival=Infinity;
+ addCustomer();el('message').textContent='Choose the flavour on the first ticket.';
+ el('start').disabled=true;render();timer=setInterval(tick,100);
+};
+el('find').onclick=()=>{if(active()){addCustomer();render()}};
+el('hire').onclick=()=>{
+ if(!active()||money<cost())return;
+ money-=cost();agents++;if(agents===1)nextArrival=Date.now()+5000;
+ el('message').textContent='Agent recruited. Each sale now earns £'+(8+2*agents)+'.';render();
+};
+for(const flavour of flavours){
+ const button=document.createElement('button');button.textContent=flavour;button.disabled=true;
+ button.onclick=()=>{
+  if(!active()||mixEnds||!orders.length)return;
+  if(orders[0].flavour!==flavour){deadline-=2000;el('message').textContent='Wrong flavour. Two seconds lost.';tick();return}
+  orders.shift();pending=8+2*agents;mixEnds=Date.now()+550;el('message').textContent='Blending '+flavour.toLowerCase()+'…';render();
+ };
+ el('products').append(button);
+}
+</script></html>
