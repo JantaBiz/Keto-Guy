@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en-GB"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gary’s Shake Stop · Port Talbot</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f6efde;color:#243e3a;font:16px/1.4 system-ui,sans-serif}main{width:min(720px,100%);margin:auto;padding:16px}header,.stats,.caption{display:flex;align-items:center;justify-content:space-between;gap:8px}header{border-bottom:2px solid;margin-bottom:12px;padding-bottom:8px;font:bold 13px monospace;letter-spacing:.08em}h1{font:italic bold clamp(35px,8vw,68px)/1 Georgia,serif;letter-spacing:-.06em;margin:10px 0 16px}h1 em{color:#b44532}.stage{overflow:hidden;position:relative;height:clamp(225px,37vh,340px);border:3px solid #294d47;border-radius:14px 14px 0 0;background:linear-gradient(#92bac7,#dae0ce 76%,#91aea4 77%)}.hills{position:absolute;inset:32% 0 0;background:#75998b;clip-path:polygon(0 32%,18% 9%,31% 24%,54% 0,78% 24%,93% 10%,100% 17%,100% 100%,0 100%)}.houses{position:absolute;bottom:38px;width:100%;height:52px;background:repeating-linear-gradient(90deg,#c68568 0 35px,#e4c39c 35px 70px);border-top:9px solid #526c68}.houses:after{content:'';position:absolute;inset:10px 0 14px;background:repeating-linear-gradient(90deg,transparent 0 12px,#48645f 12px 22px,transparent 22px 35px)}.rain{position:absolute;inset:0;opacity:.26;background:repeating-linear-gradient(112deg,transparent 0 32px,#fff 33px,transparent 35px 67px);animation:rain 1s linear infinite}@keyframes rain{to{background-position:-68px 0}}.awning{position:absolute;inset:0 0 auto;height:24px;background:repeating-linear-gradient(90deg,#d76c53 0 37px,#fff0c9 37px 74px);border-bottom:4px solid #283f3877}.person{position:absolute;left:18%;bottom:0;width:100px;height:142px;--coat:#b6503a;animation:enter .35s ease-out}.body{position:absolute;bottom:-22px;left:0;width:100%;height:83px;background:var(--coat);border:3px solid #314339;border-radius:44% 44% 8px 8px}.face{position:absolute;left:14px;top:14px;width:72px;height:77px;background:#bcc89f;border:3px solid #314339;border-radius:43%}.face:before{content:'•　•';display:block;text-align:center;margin-top:18px;font-weight:900}.mouth{display:block;width:24px;height:9px;border-top:3px solid;margin:4px auto;border-radius:50%}.happy .mouth,.familiar .mouth{border:0;border-bottom:4px solid;height:12px}.happy .face,.familiar .face{background:#e8b98f}.happy .mouth{background:white;border:2px solid;width:34px;height:16px;border-radius:4px 4px 90% 90%}.hat{position:absolute;font-size:45px;top:-19px;left:20px;transform:rotate(-9deg)}.wave{position:absolute;bottom:39px;right:-26px;font-size:34px;transform:rotate(-18deg)}.happy{animation:leave 1.05s ease-in forwards}@keyframes leave{0%,55%{transform:translateX(0)}100%{transform:translateX(-180px);opacity:0}}@keyframes enter{from{transform:translateX(-90px);opacity:0}}.bubble{position:absolute;right:4%;top:22%;width:49%;background:#fffbeb;border:2px solid;border-radius:16px 16px 16px 0;padding:12px;font:bold clamp(16px,3.3vw,23px)/1.22 Georgia}.counter{background:#265b50;color:#fff6de;padding:11px 15px}.stats{font:bold 15px monospace}.menu{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}button{cursor:pointer;border:2px solid #345046;border-radius:9px;padding:9px;background:#fff9e8;color:inherit;font:700 15px system-ui;box-shadow:0 3px #345046}button:disabled{cursor:default;opacity:.62}button:focus-visible{outline:4px solid #d66a41}.menu span{display:block;font-size:29px}.caption{flex-wrap:wrap}#action{background:#ffd67b}#name{font-weight:800}#detail{font-size:14px}#intro{max-width:60ch}p{margin:12px 0}@media(max-width:430px){main{padding:10px}.menu{gap:5px}.menu button{font-size:12px;padding:6px 1px}.person{left:11%}}@media(prefers-reduced-motion:reduce){*,*:before{animation:none!important}}
+</style>
+<main><header><span>PORT TALBOT</span><span>LUNCH RUSH</span></header><h1>Gary’s <em>Shake Stop</em></h1>
+<div class="stage"><div class="hills"></div><div class="houses"></div><div class="rain"></div><div class="awning"></div><div class="person" id="person" aria-hidden="true"><div class="body"></div><div class="face"><i class="mouth"></i></div><span class="hat" id="hat">☂️</span><span class="wave" id="wave"></span></div><div class="bubble" id="speech" aria-live="polite">Any chance of a mocha to go?</div></div>
+<div class="counter stats"><span id="time">90s</span><span id="score">0 smiles</span><span id="best">Best 0</span></div>
+<p class="caption"><span id="name">At the counter</span><span id="detail"></span></p><div id="menu" class="menu"></div><button id="action">Open the shop</button><p id="intro">Serve each order in a 90-second shift. When a regular asks for their usual, tap the right item from memory for three smiles. You can always ask for their order.</p></main>
+<script>
+const get=id=>document.getElementById(id);
+const menu=['Mocha shake','Herbalife bar','Crisps','Meal of the day'];
+const regulars=[['Carys','☂️','#b44e3d'],['Dai','🧢','#395773'],['Nia','🎧','#826299']];
+let score=0,best=0,visits=[],usual=[],bag=[],who=-1,phase='closed',deadline=0,timer,transition;
+try{best=Number(localStorage.garysBest)||0}catch{}
+const buttons=menu.map((item,i)=>{
+ const b=document.createElement('button'),icon=document.createElement('span');
+ icon.textContent=['🥤','🍫','🍟','🥗'][i];icon.setAttribute('aria-hidden','true');b.append(icon,item);b.disabled=true;
+ b.onclick=()=>serve(i);get('menu').append(b);return b;
+});
+function totals(){get('score').textContent=score+' smiles';get('best').textContent='Best '+best}
+function shuffle(items){for(let i=items.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[items[i],items[j]]=[items[j],items[i]]}return items}
+function showOrder(){phase='order';get('speech').textContent=['A mocha to go, please!','A Herbalife bar, please!','A packet of crisps, please!','Meal of the day for me!'][usual[who]];get('action').hidden=true}
+function arrive(){
+ if(Date.now()>=deadline)return finish();
+ if(!bag.length){bag=shuffle([0,1,2]);if(bag[0]===who)bag.reverse()}
+ who=bag.shift();const [name,hat,coat]=regulars[who];const count=visits[who];
+ get('person').className='person'+(count?' familiar':'');get('person').style.setProperty('--coat',coat);
+ get('hat').textContent=hat;get('wave').textContent=count>=2?'👋':'';
+ get('name').textContent=name;get('detail').textContent='Visit '+(count+1);
+ buttons.forEach(b=>b.disabled=false);
+ if(!count)return showOrder();
+ phase='memory';get('speech').textContent='My usual, please, Gary!';get('action').textContent='Ask for the order';get('action').hidden=false;
+}
+function serve(i){
+ if(!['order','memory'].includes(phase))return;
+ if(Date.now()>=deadline)return finish();
+ if(i!==usual[who]){showOrder();get('speech').textContent='Actually… '+get('speech').textContent;return}
+ const bonus=phase==='memory';score+=bonus?3:1;visits[who]++;phase='leaving';totals();
+ get('person').classList.add('happy');get('wave').textContent='👋';get('speech').textContent=bonus?'You remembered! +3 smiles':'Cheers, Gary! +1 smile';
+ buttons.forEach(b=>b.disabled=true);get('action').hidden=true;transition=setTimeout(arrive,1080);
+}
+function finish(){
+ clearInterval(timer);clearTimeout(transition);phase='closed';best=Math.max(score,best);
+ try{localStorage.garysBest=best}catch{}totals();get('time').textContent='0s';get('speech').textContent='That’s lunch! '+score+' smiles today.';
+ get('name').textContent='Shop closed';get('detail').textContent=visits.reduce((a,b)=>a+b,0)+' orders served';
+ buttons.forEach(b=>b.disabled=true);get('action').hidden=false;get('action').textContent='Play again';
+}
+get('action').onclick=()=>{
+ if(phase==='memory'){if(Date.now()>=deadline)return finish();return showOrder()}
+ if(phase!=='closed')return;
+ score=0;who=-1;bag=[0,...shuffle([1,2])];visits=[0,0,0];usual=[0,...shuffle([1,2,3]).slice(0,2)];
+ deadline=Date.now()+90000;get('time').textContent='90s';totals();arrive();
+ timer=setInterval(()=>{const left=Math.ceil((deadline-Date.now())/1000);if(left<=0)finish();else get('time').textContent=left+'s'},200);
+};totals();
+</script></html>
